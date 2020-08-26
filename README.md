@@ -26,10 +26,14 @@
 * [Indicators]
   * [ThinkOrSwim](#thinkorswim-indicators)
   * [MQL5](#mql5-indicators)
+  * [MQL4](#mql4-indicators)
+  * [TradingView](#tradingview-indicators)
 
 * [Strategies]
   * [ThinkOrSwim](#thinkorswim-indicators)
   * [MQL5](#mql5-indicators)
+  * [MQL4](#mql4-indicators)
+  * [TradingView](#tradingview-indicators)
 
 
 ## ThinkOrSwim Indicators
@@ -40,6 +44,13 @@
 
 [![MQL5][MQL5-Image]](https://github.com/bear-gold/Trading-Indicators/tree/master/MQL5)
 
+## MQL4 Indicators
+
+[![MQL4][MQL4-Image]](https://github.com/bear-gold/Trading-Indicators/tree/master/MQL4)
+
+## TradingView Indicators
+
+[![TradingView][PINE-Image]](https://github.com/bear-gold/Trading-Indicators/tree/master/TradingView)
 
 
 <!-- MARKDOWN LINKS & IMAGES -->
@@ -58,3 +69,5 @@
 [linkedin-url]: https://linkedin.com/in/othneildrew
 [TOS-Image]: ThinkOrSwim/TOS.png
 [MQL5-Image]: MQL5/MQL5.png
+[MQL4-Image]: MQL4/MQL4.png
+[PINE-Image]: TradingView/PineScript.png

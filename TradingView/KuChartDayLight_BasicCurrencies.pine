@@ -1,0 +1,132 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
+// © willcomeo022
+
+//@version=4
+study("KuChartDayLight_BasicCurrencies")
+
+RefreshTime = input(title="RefreshTime", type=input.integer, defval=5)
+MaxBars = input(title="MaxBars", type=input.integer, defval=1000)
+MAPeriod = input(title="MAPeriod", type=input.integer, defval=1)
+MAPrice = input(title="MAPrice", type=input.source, defval=close)
+MAMethod = input(title="MAMethod", type=input.integer, defval=0)
+Start_Time = input(title="Start_Time", type=input.string, defval="2011.03.14 00:00")
+UseLongTermMode = input(title="UseLongTermMode", type=input.bool, defval=false)
+TimeOffset = input(title="TimeOffset", type=input.integer, defval=0)
+DaySpan = input(title="DaySpan", type=input.integer, defval=1)
+SelectedLineWidth = input(title="SelectedLineWidth", type=input.integer, defval=1)
+NonSelectedLineWidth = input(title="NonSelectedLineWidth", type=input.integer, defval=1)
+UseAutoDetect = input(title="UseAutoDetect", type=input.bool, defval=true)
+
+UseUSD = true
+UseEUR = true
+UseGBP = true
+UseCHF = true
+UseJPY = true
+UseAUD = true
+UseCAD = true
+UseNZD = true
+
+ShowUSD = input(title="ShowUSD", type=input.bool, defval=true)
+ShowEUR = input(title="ShowEUR", type=input.bool, defval=true)
+ShowGBP = input(title="ShowGBP", type=input.bool, defval=true)
+ShowCHF = input(title="ShowCHF", type=input.bool, defval=true)
+ShowJPY = input(title="ShowJPY", type=input.bool, defval=true)
+ShowAUD = input(title="ShowAUD", type=input.bool, defval=true)
+ShowCAD = input(title="ShowCAD", type=input.bool, defval=true)
+ShowNZD = input(title="ShowNZD", type=input.bool, defval=true)
+
+Color_USD = color.orange
+Color_EUR = color.red
+Color_GBP = color.lime
+Color_CHF = color.white
+Color_JPY = color.green
+Color_AUD = color.blue
+Color_CAD = color.yellow
+Color_NZD = color.teal
+
+sEURUSD = "FX:EURUSD"
+sUSDJPY = "FX:USDJPY"
+sUSDCHF = "FX:USDCHF"
+sGBPUSD = "FX:GBPUSD"
+sAUDUSD = "FX:AUDUSD"
+sUSDCAD = "FX:USDCAD"
+sNZDUSD = "FX:NZDUSD"
+
+EURUSD = security(sEURUSD, timeframe.period, MAPrice)
+USDJPY = security(sUSDJPY, timeframe.period, MAPrice)
+USDCHF = security(sUSDCHF, timeframe.period, MAPrice)
+GBPUSD = security(sGBPUSD, timeframe.period, MAPrice)
+AUDUSD = security(sAUDUSD, timeframe.period, MAPrice)
+USDCAD = security(sUSDCAD, timeframe.period, MAPrice)
+NZDUSD = security(sNZDUSD, timeframe.period, MAPrice)
+
+t = time("1440", session.regular)
+Is_NewDay = na(t[1]) and not na(t) or t[1] < t
+
+var float First_EURUSD = na
+var float First_USDJPY = na
+var float First_USDCHF = na
+var float First_GBPUSD = na
+var float First_AUDUSD = na
+var float First_USDCAD = na
+var float First_NZDUSD = na
+
+if Is_NewDay
+    First_EURUSD := EURUSD
+    First_USDJPY := USDJPY
+    First_USDCHF := USDCHF
+    First_GBPUSD := GBPUSD
+    First_AUDUSD := AUDUSD
+    First_USDCAD := USDCAD
+    First_NZDUSD := NZDUSD
+
+vEURUSD = log(EURUSD / First_EURUSD) * 10000
+vUSDJPY = log(USDJPY / First_USDJPY) * 10000
+vUSDCHF = log(USDCHF / First_USDCHF) * 10000
+vGBPUSD = log(GBPUSD / First_GBPUSD) * 10000
+vAUDUSD = log(AUDUSD / First_AUDUSD) * 10000
+vUSDCAD = log(USDCAD / First_USDCAD) * 10000
+vNZDUSD = log(NZDUSD / First_NZDUSD) * 10000
+
+if UseEUR == false
+    vEURUSD := 0
+if UseJPY == false
+    vUSDJPY := 0
+if UseCHF == false
+    vUSDCHF := 0
+if UseGBP == false
+    vGBPUSD := 0
+if UseAUD == false
+    vAUDUSD := 0
+if UseCAD == false
+    vUSDCAD := 0
+if UseNZD == false
+    vNZDUSD := 0
+if UseUSD == false
+    vEURUSD := 0
+    vUSDJPY := 0
+    vUSDCHF := 0
+    vGBPUSD := 0
+    vAUDUSD := 0
+    vUSDCAD := 0
+    vNZDUSD := 0
+
+a = (vEURUSD + vGBPUSD + vAUDUSD + vNZDUSD - vUSDJPY - vUSDCHF - vUSDCAD) / 7
+
+EURAV= vEURUSD - a
+USDAV= - a
+JPYAV= -vUSDJPY - a
+CHFAV= -vUSDCHF - a
+GBPAV= vGBPUSD - a      
+AUDAV= vAUDUSD - a
+CADAV= -vUSDCAD - a
+NZDAV= vNZDUSD - a
+
+plot(USDAV, title="USD", color = Color_USD)
+plot(EURAV, title="EUR", color = Color_EUR)
+plot(JPYAV, title="JPY", color = Color_JPY)
+plot(CHFAV, title="CHF", color = Color_CHF)
+plot(GBPAV, title="GBP", color = Color_GBP)
+plot(AUDAV, title="AUD", color = Color_AUD)
+plot(CADAV, title="CAD", color = Color_CAD)
+plot(NZDAV, title="NZD", color = Color_NZD)
