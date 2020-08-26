@@ -23,10 +23,11 @@
 
 
 ## Contents
-[Indicators]
+* [Indicators]
   * [ThinkOrSwim](#thinkorswim-indicators)
   * [MQL5](#mql5-indicators)
-[Strategies]
+
+* [Strategies]
   * [ThinkOrSwim](#thinkorswim-indicators)
   * [MQL5](#mql5-indicators)
 
