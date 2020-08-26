@@ -1,0 +1,257 @@
+# Corey Initial Balance (c) version 1
+# By Corey Surles
+# @coreysurles
+
+
+#Disclaimer#
+#All output is for informational and educational purposes only. This is not an investment recommendation or advice, and should not be relied upon in making the decision to buy or sell a security or pursue a particular investment strategy#
+
+
+#\\\\\\\\\\\Definitions
+input showArrows = yes;
+input ShowQuads = yes;
+input ShowExtensions = yes;
+input ShowCloudsIB = yes;
+input ShowCloudExt = yes;
+input ShowLabels = yes;
+def na = Double.NaN;
+#input timeO = 0930;
+#input timeC = 1030;
+#def price1 = close;
+
+
+input OpenRangeMinutes = 60;
+input MarketOpenTime = 0930;
+input showTodayOnly = no;
+input useEMACross = yes;
+input ema1_len = 8;
+input ema2_len = 13;
+plot ema1 = movavgExponential(length= ema1_len);
+plot ema2 = movavgexponential(length = ema2_len);
+#AddVerticalLine(SecondsFromTime(0930) == 0, "Open", Color.WHITE, Curve.SHORT_DASH);
+#AddVerticalLine(SecondsFromTime(1600) == 0, "Close", Color.WHITE, Curve.SHORT_DASH);
+#AddVerticalLine(!TradeTimeFilter, "Last Signal", Color.WHITE, Curve.SHORT_DASH);
+def today = if getday() == getlastday() then 1 else 0;
+def FirstMinute = if secondsfromtime(MarketOpenTime) < 60 then 1 else 0;
+def LastMinute =  if secondstilltime(MarketOpenTime) > 60 then 1 else 0;
+def OpenRangeTime = if secondsfromtime(MarketOpenTime) < 60 * OpenRangeMinutes then 1 else 0;
+
+def ORHigh = if FirstMinute then high else if OpenRangeTime and high > ORHigh[1] then high else ORHigh[1];
+def ORLow = if FirstMinute then low else if OpenRangeTime and low < ORLow[1] then low else ORLow[1];
+
+Plot OpenRangeHigh = if ShowTodayOnly and !today then double.nan else if !OpenRangeTime then ORHigh else double.nan;
+Plot OpenRangeLow = if ShowTodayOnly and !today then double.nan else if !OpenRangeTime then ORLow else double.nan;
+
+#plot openRangeH = if firstminute then high else double.nan;
+#openRangeH.setdefaultColor(color.yellow);
+
+OpenRangeHigh.setpaintingStrategy(paintingStrategy.HORIZONTAL);
+OpenRangeHigh.setdefaultColor(Color.Red);
+OpenRangeHigh.setlineWeight(3);
+
+OpenRangeLow.setpaintingStrategy(paintingStrategy.HORIZONTAL);
+OpenRangeLow.setdefaultColor(Color.Green);
+OpenRangeLow.setlineWeight(1);
+
+def swinghigh = 
+    if OpenRangeLow
+    then 1 else 0;
+#plot high = orh;
+def swinglow = 
+    if OpenRangeLow
+    then 1 else 0;
+
+#\\\\\\\\\\\Plots
+#Up Down Arrows
+plot IBHigh = if swinghigh then ORHigh else na;
+IBHigh.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+IBHigh.SetDefaultColor(Color.Red);
+
+plot IBLow = if swinglow then ORLow else na;
+IBLow.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+IBLow.SetDefaultColor(Color.Green);
+
+
+
+# extend the current IB High to next day open
+def countp = if IsNaN(IBHigh) and !IsNaN(IBHigh[1]) then 1 else countp[1] + 1;
+plot IBHighext = if IsNaN(IBHigh) and LastMinute then GetValue(IBHigh, countp) else Double.NaN;
+IBHighext.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+IBHighext.SetDefaultColor(Color.Red);
+IBHighext.SetLineWeight(3);
+
+# extend the current IB Low to next day open
+def countv = if IsNaN(IBLow) and !IsNaN(IBLow[1]) then 1 else countv[1] + 1;
+plot IBLowext = if IsNaN(IBLow) and LastMinute then GetValue(IBLow, countv) else Double.NaN;
+IBLowext.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+IBLowext.SetDefaultColor(Color.Green);
+IBLowext.SetLineWeight(3);
+
+
+# plot quads before next day open
+plot ibInside25 = if showQuads and OpenRangeLow then (ORHigh - ORLow) / 4 + ORLow else na;
+def counti25 = if IsNaN(ibInside25) and !IsNaN(ibInside25[1]) then 1 else counti25[1] + 1;
+plot IB25 = if IsNaN(ibInside25) and LastMinute then GetValue(ibInside25, counti25) else Double.NaN;
+IB25.SetPaintingStrategy(paintingStrategy.DASHES);
+IB25.SetDefaultColor(Color.white);
+IB25.SetLineWeight(1);
+
+plot ibInside50 = if showQuads and OpenRangeLow then (ORHigh - ORLow) / 2 + ORLow else na;
+def counti50 = if IsNaN(ibInside50) and !IsNaN(ibInside50[1]) then 1 else counti50[1] + 1;
+plot IB50 = if IsNaN(ibInside50) and LastMinute then GetValue(ibInside50, counti50) else Double.NaN;
+IB50.SetPaintingStrategy(paintingStrategy.DASHES);
+IB50.SetDefaultColor(Color.WHITE);
+IB50.SetLineWeight(1);
+
+plot ibInside75 = if showQuads and OpenRangeLow then (ORHigh - ORLow) / 4 * 3 + ORLow else na;
+def counti75 = if IsNaN(ibInside75) and !IsNaN(ibInside75[1]) then 1 else counti75[1] + 1;
+plot IB75 = if IsNaN(ibInside75) and LastMinute then GetValue(ibInside75, counti75) else Double.NaN;
+IB75.SetPaintingStrategy(paintingStrategy.DASHES);
+IB75.SetDefaultColor(Color.WHITE);
+IB75.SetLineWeight(1);
+
+# code that shows quads of the highest  and lowest orhigh and orlow
+# (HighestAll(ORHigh) - LowestAll(ORLow)) / 4 * 3 + LowestAll(ORLow)
+
+# Set color for current IB
+ibInside25.SetDefaultColor(Color.white);
+ibInside50.SetDefaultColor(Color.WHITE);
+ibInside75.SetDefaultColor(Color.WHITE);
+ibInside25.SetPaintingStrategy(paintingStrategy.DASHES);
+ibInside50.SetPaintingStrategy(paintingStrategy.DASHES);
+ibInside75.SetPaintingStrategy(paintingStrategy.DASHES);
+
+# Show IB Extensions Up
+plot ibUp50 = if ShowExtensions and OpenRangeHigh then (ORHigh - ORLow) / 2 + ORhigh else na;
+def countup50 = if IsNaN(ibUp50) and !IsNaN(ibUp50[1]) then 1 else countup50[1] + 1;
+plot ibUp50ext = if IsNaN(ibUp50) and LastMinute then GetValue(ibUp50, countup50) else Double.NaN;
+ibUp50.SetPaintingStrategy(paintingStrategy.DASHES);
+ibUp50.SetDefaultColor(Color.WHITE);
+ibUp50.SetLineWeight(1);
+ibUp50ext.SetPaintingStrategy(paintingStrategy.DASHES);
+ibUp50ext.SetDefaultColor(Color.WHITE);
+ibUp50ext.SetLineWeight(1);
+
+plot ibUp100 = if ShowExtensions and OpenRangeHigh then (ORHigh - ORLow) / 1 + ORhigh else na;
+def countup100 = if IsNaN(ibUp100) and !IsNaN(ibUp100[1]) then 1 else countup100[1] + 1;
+plot ibUp100ext = if IsNaN(ibUp100) and LastMinute then GetValue(ibUp100, countup100) else Double.NaN;
+ibUp100.SetPaintingStrategy(paintingStrategy.DASHES);
+ibUp100.SetDefaultColor(Color.WHITE);
+ibUp100.SetLineWeight(1);
+ibUp100ext.SetPaintingStrategy(paintingStrategy.DASHES);
+ibUp100ext.SetDefaultColor(Color.WHITE);
+ibUp100ext.SetLineWeight(1);
+
+input ExtensionVariable = 3.00;
+plot ibUpVar = if ShowExtensions and OpenRangeLow then ORHigh + extensionVariable * (ORHigh - ORLow) else na;
+def countUpVar = if IsNaN(ibUpVar) and !IsNaN(ibUpVar[1]) then 1 else countUpVar[1] + 1;
+plot ibUpVarext = if IsNaN(ibUpVar) and LastMinute then GetValue(ibUpVar, countUpVar) else Double.NaN;
+ibUpVar.SetPaintingStrategy(paintingStrategy.DASHES);
+ibUpVar.SetDefaultColor(Color.WHITE);
+ibUpVar.SetLineWeight(1);
+ibUpVarext.SetPaintingStrategy(paintingStrategy.DASHES);
+ibUpVarext.SetDefaultColor(Color.WHITE);
+ibUpVarext.SetLineWeight(1);
+
+# Show IB Extensions Down
+plot ibDown50 = if ShowExtensions and OpenRangeLow then ORLow - (ORHigh - ORLow) / 2 else na;
+def countDown50 = if IsNaN(ibDown50) and !IsNaN(ibDown50[1]) then 1 else countDown50[1] + 1;
+plot ibDown50ext = if IsNaN(ibDown50) and LastMinute then GetValue(ibDown50, countDown50) else Double.NaN;
+ibDown50.SetPaintingStrategy(paintingStrategy.DASHES);
+ibDown50.SetDefaultColor(Color.WHITE);
+ibDown50.SetLineWeight(1);
+ibDown50ext.SetPaintingStrategy(paintingStrategy.DASHES);
+ibDown50ext.SetDefaultColor(Color.WHITE);
+ibDown50ext.SetLineWeight(1);
+
+plot ibDown100 = if ShowExtensions and OpenRangeLow then ORLow - (ORHigh - ORLow) / 1 else na;
+def countDown100 = if IsNaN(ibDown100) and !IsNaN(ibDown100[1]) then 1 else countDown100[1] + 1;
+plot ibDown100ext = if IsNaN(ibDown100) and LastMinute then GetValue(ibDown100, countDown100) else Double.NaN;
+ibDown100.SetPaintingStrategy(paintingStrategy.DASHES);
+ibDown100.SetDefaultColor(Color.WHITE);
+ibDown100.SetLineWeight(1);
+ibDown100ext.SetPaintingStrategy(paintingStrategy.DASHES);
+ibDown100ext.SetDefaultColor(Color.WHITE);
+ibDown100ext.SetLineWeight(1);
+
+
+plot ibDownVar = if ShowExtensions and OpenRangeLow then ORLow - extensionVariable * (ORHigh - ORLow) else na;
+def countDownVar = if IsNaN(ibDownVar) and !IsNaN(ibDownVar[1]) then 1 else countDownVar[1] + 1;
+plot ibDownVarext = if IsNaN(ibDownVar) and LastMinute then GetValue(ibDownVar, countDownVar) else Double.NaN;
+ibDownVar.SetPaintingStrategy(paintingStrategy.DASHES);
+ibDownVar.SetDefaultColor(Color.WHITE);
+ibDownVar.SetLineWeight(1);
+ibDownVarext.SetPaintingStrategy(paintingStrategy.DASHES);
+ibDownVarext.SetDefaultColor(Color.WHITE);
+ibDownVarext.SetLineWeight(1);
+
+
+AddCloud(if ShowCloudsIB then OpenRangeLow else na, ibInside25, Color.RED, Color.GREEN);
+AddCloud(if ShowCloudsIB then ibInside25 else na, ibInside50, Color.YELLOW, Color.YELLOW);
+AddCloud(if ShowCloudsIB then ibInside50 else na, ibInside75, Color.YELLOW, Color.YELLOW);
+AddCloud(if ShowCloudsIB then ibInside75 else na, OpenRangeHigh, Color.GREEN, Color.RED);
+
+AddCloud(if ShowCloudsIB then IBLowext else na, ib25, Color.RED, Color.GREEN);
+AddCloud(if ShowCloudsIB then ib25 else na, ib50, Color.YELLOW, Color.YELLOW);
+AddCloud(if ShowCloudsIB then ib50 else na, ib75, Color.YELLOW, Color.YELLOW);
+AddCloud(if ShowCloudsIB then ib75 else na, IBHighext, Color.GREEN, Color.RED);
+
+#Cloud current Extensions Down
+AddCloud(if showCloudExt and low(period = "day") < OpenRangeLow then OpenRangeLow else double.nan, ibDown50, Color.magenta, Color.magenta);
+AddCloud(if showCloudExt and low(period = "day") < ibDown50 then ibDown50 else double.nan, ibDown100, Color.magenta, Color.magenta);
+AddCloud(if showCloudExt and low(period = "day") < ibDown100 then ibDown100 else double.nan, low(period = "day"), Color.pink, Color.pink);
+
+#Cloud next day Extensions Down
+AddCloud(if showCloudExt and low(period = "day") < IBLowext then IBLowext else double.nan, ibDown50ext, Color.magenta, Color.magenta);
+AddCloud(if showCloudExt and low(period = "day") < ibDown50ext then ibDown50ext else double.nan, ibDown100ext, Color.magenta, Color.magenta);
+AddCloud(if showCloudExt and low(period = "day") < ibDown100ext then ibDown100ext else double.nan, low(period = "day"), Color.pink, Color.pink);
+
+#Cloud current Extensions Up
+AddCloud(if showCloudExt and high(period = "day") > OpenRangeHigh then OpenRangeHigh else double.nan, ibup50, Color.magenta, Color.magenta);
+AddCloud(if showCloudExt and high(period = "day") > ibup50 then ibup50 else double.nan, ibup100, Color.magenta, Color.magenta);
+AddCloud(if showCloudExt and high(period = "day") > ibup100 then ibup100 else double.nan, high(period = "day"), Color.pink, Color.pink);
+
+#Cloud next day Extensions Up
+AddCloud(if showCloudExt and  high(period = "day") > IBHighext then IBHighext else double.nan, ibup50ext, Color.magenta, Color.magenta);
+AddCloud(if showCloudExt and  high(period = "day") > ibup50ext then ibup50ext else double.nan, ibup100ext, Color.magenta, Color.magenta);
+AddCloud(if showCloudExt and  high(period = "day") > ibup100ext then ibup100ext else double.nan, high(period = "day"), Color.pink, Color.pink);
+
+addlabel(showlabels, "IB High: " + (if isnan(ibhigh) then ibhighext else ibhigh), color.pink);
+addlabel(showlabels, "IB Low: " + (if isnan(iblow) then iblowext else iblow), color.green);
+addlabel(showlabels, "IB Range: " + ((if isnan(ibhigh) then ibhighext else ibhigh)-(if isnan(iblow) then iblowext else iblow)) + "pts", color.white);
+addlabel(showlabels, "IB High Ext50: " + (if isnan(ibhigh) then ibUp50ext else ibUp50), color.green);
+addlabel(showlabels, "IB High Ext100: " + (if isnan(ibhigh) then ibUp100ext else ibUp100), color.green);
+addlabel(showlabels, "IB Low Ext50: " + (if isnan(iblow) then ibDown50ext else ibDown50), color.pink);
+addlabel(showlabels, "IB Low Ext100: " + (if isnan(iblow) then ibDown100ext else ibDown100), color.pink);
+
+
+
+# plot quads after the initial balance period
+#plot ibOutside25 = if showQuads and GetLastDay() != GetDay() or SecondsFromTime(ORend) < 0 then na else (HighestAll(ORHigh) - LowestAll(ORLow)) / 4 + LowestAll(ORLow);
+
+#plot ibOutside50 = if showQuads and GetLastDay() != GetDay() or SecondsFromTime(ORend) < 0 then na else (HighestAll(ORHigh) - LowestAll(ORLow)) / 2 + LowestAll(ORLow);
+
+#plot ibOutside75 = if showQuads and GetLastDay() != GetDay() or SecondsFromTime(ORend) < 0 then na else (HighestAll(ORHigh) - LowestAll(ORLow)) / 4 * 3 + LowestAll(ORLow);
+
+#ibOutside25.SetDefaultColor(Color.WHITE);
+#ibOutside50.SetDefaultColor(Color.WHITE);
+#ibOutside75.SetDefaultColor(Color.WHITE);
+#ibOutside25.SetPaintingStrategy(Curve.LONG_DASH);
+#ibOutside50.SetPaintingStrategy(Curve.LONG_DASH);
+#ibOutside75.SetPaintingStrategy(Curve.LONG_DASH);
+
+
+
+
+###AddCloud(Trej1,   Trej2,   Color.GREEN,   Color.RED);
+
+
+
+
+
+
+
+#def dailyrange = high(period = "day" )[1] - low(period = "day" )[1];
+#def range = average(dailyrange, 10);
+
+

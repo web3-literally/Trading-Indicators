@@ -1,0 +1,91 @@
+# Corey Gapfinder (c) version 1
+# By Corey Surles
+# @coreysurles
+
+
+#Disclaimer#
+#All output is for informational and educational purposes only. This is not an investment recommendation or advice, and should not be relied upon in making the decision to buy or sell a security or pursue a particular investment strategy#
+
+
+#\\\\\\\\\\\Definitions
+input showArrows = no;
+input showClouds = no;
+input GapDownStart = close;
+input GapDownEnd = open ;#{default High, Close, Open, Low};
+input GapUpStart = close;#{default Close, Low, Open, High};
+input GapUpEnd = open;#{default Low, Close, Open, High};
+def na = Double.NaN;
+
+#define down minus development
+def GapDown = 
+    if GapDownStart[1] > GapDownEnd
+    then 1 else 0;
+
+#Define Up minus development
+def GapUp = 
+    if GapUpStart[1] < GapUpEnd
+    then 1 else 0;
+
+#\\\\\\\\\\\Plots
+
+#Horizontals
+plot GDS = if GapDown then GapDownStart[1] else na;
+GDS.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+GDS.SetDefaultColor(Color.RED);
+GDS.SetLineWeight(3);
+
+plot GDE = if GapDown then GapDownEnd else na;
+GDE.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+GDE.SetDefaultColor(Color.RED);
+GDE.SetLineWeight(3);
+
+plot GUS = if GapUp then GapUpStart[1] else na;
+GUS.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+GUS.SetDefaultColor(Color.GREEN);
+GUS.SetLineWeight(3);
+
+plot GUE = if GapUp then GapUpEnd else na;
+GUE.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+GUE.SetDefaultColor(Color.GREEN);
+GUE.SetLineWeight(3);
+
+
+# extend the current Gap Down lines to the right edge of the chart
+def countp = if IsNaN(GDS) and !IsNaN(GDS[1]) then 1 else countp[1] + 1;
+plot GDSext = if IsNaN(GDS) then GetValue(GDS, countp) else Double.NaN;
+GDSext.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+GDSext.SetDefaultColor(Color.RED);
+GDSext.SetLineWeight(3);
+
+def countp1 = if IsNaN(GDE) and !IsNaN(GDE[1]) then 1 else countp1[1] + 1;
+plot GDSext2 = if IsNaN(GDE) then GetValue(GDE, countp1) else Double.NaN;
+GDSext2.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+GDSext2.SetDefaultColor(Color.RED);
+GDSext2.SetLineWeight(3);
+
+# extend the current Gap Up lines to the right edge of the chart
+def countv = if IsNaN(GUS) and !IsNaN(GUS[1]) then 1 else countv[1] + 1;
+plot GUSext = if IsNaN(GUS) then GetValue(GUS, countv) else Double.NaN;
+GUSext.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+GUSext.SetDefaultColor(Color.GREEN);
+GUSext.SetLineWeight(3);
+
+def countv2 = if IsNaN(GUE) and !IsNaN(GUE[1]) then 1 else countv2[1] + 1;
+plot GUSext2 = if IsNaN(GUE) then GetValue(GUE, countv2) else Double.NaN;
+GUSext2.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+GUSext2.SetDefaultColor(Color.GREEN);
+GUSext2.SetLineWeight(3);
+
+#Horizontal Lines
+plot GDArrow = if GapDown and showArrows then high else na;
+GDArrow.SetPaintingStrategy(PaintingStrategy.BOOLEAN_ARROW_DOWN);
+GDArrow.SetDefaultColor(Color.RED);
+GDArrow.SetLineWeight(5);
+
+plot GUArrow = if GapUp and showArrows then low else na;
+GUArrow.SetPaintingStrategy(PaintingStrategy.BOOLEAN_ARROW_UP);
+GUArrow.SetDefaultColor(Color.GREEN);
+GUArrow.SetLineWeight(5);
+
+AddCloud(if showClouds then GUSext else na, if showClouds then GUSext2 else na, Color.GREEN, Color.GREEN);
+AddCloud(if showClouds then GDSext else na, if showClouds then GDSext2 else na, Color.RED, Color.RED);

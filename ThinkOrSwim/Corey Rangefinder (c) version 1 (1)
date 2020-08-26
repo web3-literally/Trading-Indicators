@@ -1,0 +1,193 @@
+# Corey Rangefinder (c) version 1
+# By Corey Surles
+# @coreysurles
+
+
+#Disclaimer#
+#All output is for informational and educational purposes only. This is not an investment recommendation or advice, and should not be relied upon in making the decision to buy or sell a security or pursue a particular investment strategy#
+
+#\\\\\\\\\\\Definitions
+#if bar0 is positive then bullish imbalance
+#if bar0 is negative then bearish imbalance
+
+#Buy Triggers
+##### Bar0 positive
+#if bar2 is negative then yellow caution up
+
+
+#Sell Triggers
+##### Bar0 negative
+#if bar2 is positive then yellow caution down
+
+
+
+def showExtensions = yes;
+input showBubblesRange = yes;
+input showArrows = yes;
+
+def na = Double.NaN;
+
+# Define Range Conditions
+def trigger1 = high;
+def trigger2 = low;
+def trigger3 = low;
+def trigger4 = high;
+def exHigh = 
+    if trigger1 > trigger4[1] and trigger2 < trigger2 [1]   
+    then 1 else 0;
+def exLow = 
+    if trigger1 > trigger4[1] and trigger3 < trigger2[1]
+    then 1 else 0;
+
+#Horizontal Lines
+plot expandTriggerHigh = if exHigh then high else na;
+expandTriggerHigh.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+expandTriggerHigh.SetDefaultColor(Color.RED);
+
+plot expandTriggerLow = if exLow then low else na;
+expandTriggerLow.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+expandTriggerLow.SetDefaultColor(Color.RED);
+
+# extend the current exHigh line to the right edge of the chart
+def countp = if IsNaN(expandTriggerHigh) and !IsNaN(expandTriggerHigh[1]) then 1 else countp[1] + 1;
+plot expandHext = if IsNaN(expandTriggerHigh) then GetValue(expandTriggerHigh, countp) else Double.NaN;
+expandHext.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+expandHext.SetDefaultColor(Color.RED);
+expandHext.SetLineWeight(3);
+
+# extend the current exLow line to the right edge of the chart
+def countv = if IsNaN(expandTriggerLow) and !IsNaN(expandTriggerLow[1]) then 1 else countv[1] + 1;
+plot expandLext = if IsNaN(expandTriggerLow) then GetValue(expandTriggerLow, countv) else Double.NaN;
+expandLext.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+expandLext.SetDefaultColor(Color.RED);
+expandLext.SetLineWeight(3);
+
+# Define Targets
+def imbal = if close > open then high else low;
+def flip = if close > open then 1 else -1;
+def range = high - low;
+
+def period = 3;
+plot sbar = Average(close, period);
+
+# Target conditions
+plot expext1 = if  exHigh == 1 then imbal + flip * range * 1 else na;
+plot expext38 = if exHigh == 1 then imbal + flip * range * .382 else na;
+plot expext50 = if exHigh == 1 then imbal + flip * range * .5 else na;
+plot expext61 = if exHigh == 1 then imbal + flip * range * .618 else na;
+plot expext78 = if exHigh == 1 then imbal + flip * range * .786 else na;
+plot expext2 = if exHigh  == 1 then imbal + flip * range * 2 else na;
+plot exprej1 = if exHigh  == 1 then imbal - (flip * range) + flip * range * -.5 else na;
+plot exprej2 = if exHigh  == 1 then imbal - (flip * range) + flip * range * -1 else na;
+plot exprej3 = if exHigh  == 1 then imbal - (flip * range) + flip * range * -3 else na;
+plot expmidpt = if exHigh == 1 then (expandTriggerHigh + expandTriggerLow) / 2 else na;
+plot expentrypt = if exHigh == 1 then close else na;
+
+# Target Conditions Styles
+expext1.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+expext38.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+expext50.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+expext61.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+expext78.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+expext2.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+exprej1.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+exprej2.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+exprej3.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+expmidpt.SetPaintingStrategy(PaintingStrategy.DASHES);
+expentrypt.SetPaintingStrategy(PaintingStrategy.DASHES);
+
+# Horizontal Colors
+expext1.SetDefaultColor(Color.YELLOW);
+expext38.SetDefaultColor(Color.MAGENTA);
+expext50.SetDefaultColor(Color.MAGENTA);
+expext61.SetDefaultColor(Color.MAGENTA);
+expext78.SetDefaultColor(Color.CYAN);
+expext2.SetDefaultColor(Color.RED);
+exprej1.SetDefaultColor(Color.WHITE);
+exprej2.SetDefaultColor(Color.WHITE);
+exprej3.SetDefaultColor(Color.WHITE);
+expmidpt.SetDefaultColor(Color.WHITE);
+expentrypt.SetDefaultColor(Color.YELLOW);
+sbar.SetDefaultColor(Color.GREEN);
+
+# Extend Targets
+def count1 = if IsNaN(expext1) and !IsNaN(expext1[1]) then 1 else count1[1] + 1;
+plot expandext1 = if showExtensions and IsNaN(expext1) then GetValue(expext1, count1) else Double.NaN;
+
+def count38 = if IsNaN(expext38) and !IsNaN(expext38[1]) then 1 else count38[1] + 1;
+plot expandext38 = if showExtensions and IsNaN(expext38) then GetValue(expext38, count38) else Double.NaN;
+
+def count50 = if IsNaN(expext50) and !IsNaN(expext50[1]) then 1 else count50[1] + 1;
+plot expandext50 = if showExtensions and IsNaN(expext50) then GetValue(expext50, count50) else Double.NaN;
+
+def count61 = if IsNaN(expext61) and !IsNaN(expext61[1]) then 1 else count61[1] + 1;
+plot expandext61 = if showExtensions and IsNaN(expext61) then GetValue(expext61, count61) else Double.NaN;
+
+def count78 = if IsNaN(expext78) and !IsNaN(expext78[1]) then 1 else count78[1] + 1;
+plot expandext78 = if showExtensions and IsNaN(expext78) then GetValue(expext78, count78) else Double.NaN;
+
+def count2 = if IsNaN(expext2) and !IsNaN(expext2[1]) then 1 else count2[1] + 1;
+plot expandext2 = if showExtensions and IsNaN(expext2) then GetValue(expext2, count2) else Double.NaN;
+
+def countr1 = if IsNaN(exprej1) and !IsNaN(exprej1[1]) then 1 else countr1[1] + 1;
+plot expandextr1 = if showExtensions and IsNaN(exprej1) then GetValue(exprej1, countr1) else Double.NaN;
+
+def countr2 = if IsNaN(exprej2) and !IsNaN(exprej2[1]) then 1 else countr2[1] + 1;
+plot expandextr2 = if showExtensions and IsNaN(exprej2) then GetValue(exprej2, countr2) else Double.NaN;
+
+def countr3 = if IsNaN(exprej3) and !IsNaN(exprej3[1]) then 1 else countr3[1] + 1;
+plot expandextr3 = if showExtensions and IsNaN(exprej3) then GetValue(exprej3, countr3) else Double.NaN;
+
+def countmp = if IsNaN(expmidpt) and !IsNaN(expmidpt[1]) then 1 else countmp[1] + 1;
+plot expandextmp = if showExtensions and IsNaN(expmidpt) then GetValue(expmidpt, countmp) else Double.NaN;
+
+def countep = if IsNaN(expentrypt) and !IsNaN(expentrypt[1]) then 1 else countep[1] + 1;
+plot expandextep = if showExtensions and IsNaN(expentrypt) then GetValue(expentrypt, countep) else Double.NaN;
+
+# Extension colors
+expandext1.SetDefaultColor(Color.YELLOW);
+expandext38.SetDefaultColor(Color.MAGENTA);
+expandext50.SetDefaultColor(Color.MAGENTA);
+expandext61.SetDefaultColor(Color.MAGENTA);
+expandext78.SetDefaultColor(Color.CYAN);
+expandext2.SetDefaultColor(Color.RED);#assignvaluecolor(if close > expandHext then color.red else color.green);
+expandextr1.SetDefaultColor(Color.WHITE);
+expandextr2.SetDefaultColor(Color.WHITE);
+expandextr3.SetDefaultColor(Color.WHITE);
+expandextmp.SetDefaultColor(Color.WHITE);
+expandextep.SetDefaultColor(Color.yellow);
+expandextmp.SetStyle(Curve.SHORT_DASH);
+expandextep.SetStyle(Curve.SHORT_DASH);
+
+#Arrow Definitions
+def secBar = if Average(close[1], period) < close and close[-1] >= close then 1 else 0;
+def secbarclose = if close[-2] > high then 1 else na;
+def rangeTotal = high - low;
+def tope = if open < close then (high - close) / rangeTotal * 100 else (high - open) / rangeTotal * 100;
+def bote = if open < close then (open - low) / rangeTotal * 100 else (close - low) / rangeTotal * 100;
+input excessThresh = 0; # 0 - 100
+
+#Up Down Arrows
+plot ExpandArrowUp = if exHigh == 1 and secBar == 1 or (exHigh == 1 and flip == -1 and close[-1] > close) or (exHigh == 1 and bote < excessThresh) and showArrows then low else na;
+ExpandArrowUp.SetPaintingStrategy(PaintingStrategy.BOOLEAN_ARROW_UP);
+ExpandArrowUp.AssignValueColor(if (flip[-2] == -1 or low < expandextr1[1]) then Color.YELLOW else if close[-2] < expandTriggerLow then Color.RED else if tope[-1] < bote[-1] then Color.GREEN else Color.GREEN);
+ExpandArrowUp.SetLineWeight(5);
+
+plot ExpandArrowDown = if (exHigh == 1 and secBar == 0) and showArrows then high else na;
+ExpandArrowDown.SetPaintingStrategy(PaintingStrategy.BOOLEAN_ARROW_DOWN);
+ExpandArrowDown.AssignValueColor(if flip[-2] == 1 then Color.YELLOW else if close[-2] > (if exHigh then high else na) then Color.GREEN else if tope[-1] > bote[-1] then Color.RED else Color.RED);
+ExpandArrowDown.SetLineWeight(5);
+
+#Chart labels
+
+AddLabel(yes, expandHext, Color.PINK);
+AddLabel(yes, expandLext, Color.PINK);
+
+AddChartBubble(showBubblesRange and expandTriggerHigh and isnan(expandTriggerHigh[-1]), expandTriggerHigh, expandTriggerHigh, color.PINK, yes);
+AddChartBubble(showBubblesRange and expandTriggerLow and isnan(expandTriggerLow[-1]), expandTriggerLow, expandTriggerLow, color.PINK, yes);
+
+
+
+
+
+

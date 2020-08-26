@@ -1,0 +1,149 @@
+# Corey TPO Profile (c) version 1
+# By Corey Surles
+# @coreysurles
+
+
+#Disclaimer#
+#All output is for informational and educational purposes only. This is not an investment recommendation or advice, and should not be relied upon in making the decision to buy or sell a security or pursue a particular investment strategy#
+
+
+input showExtensions = yes;
+input pricePerRowHeightMode = {default TICKSIZE, AUTOMATIC, CUSTOM};
+input customRowHeight = 1.0;
+input timePerProfile = {default day, WEEK, MINUTE, HOUR, MONTH, "OPT EXP", chart, BAR, Year};
+input multiplier = 1;
+input onExpansion = no;
+input profiles = 1000;
+input showPointOfControl = no;
+input showValueArea = no;
+input valueAreaPercent = 70;
+input opacity = 50;
+input ShowLabels = no;
+input showclouds = yes;
+input price = close;
+input smaLength = 10;
+
+
+def period;
+def yyyymmdd = GetYYYYMMDD();
+def seconds = SecondsFromTime(0);
+def month = GetYear() * 12 + GetMonth();
+def day_number = DaysFromDate(First(yyyymmdd)) + GetDayOfWeek(First(yyyymmdd));
+def dom = GetDayOfMonth(yyyymmdd);
+def dow = GetDayOfWeek(yyyymmdd - dom + 1);
+def expthismonth = (if dow > 5 then 27 else 20) - dow;
+def exp_opt = month + (dom > expthismonth);
+def year = getyear();
+switch (timePerProfile) {
+case chart:
+    period = 0;
+case MINUTE:
+    period = Floor(seconds / 60 + day_number * 24 * 60);
+case HOUR:
+    period = Floor(seconds / 3600 + day_number * 24);
+case day:
+    period = CountTradingDays(Min(First(yyyymmdd), yyyymmdd), yyyymmdd) - 1;
+case WEEK:
+    period = Floor(day_number / 7);
+case MONTH:
+    period = Floor(month - First(month));
+case "OPT EXP":
+    period = exp_opt - First(exp_opt);
+case BAR:
+    period = BarNumber() - 1;
+case year:
+    period = floor(year - first(year));
+}
+
+def count = CompoundValue(1, if period != period[1] then (count[1] + period - period[1]) % multiplier else count[1], 0);
+def cond = count < count[1] + period - period[1];
+def height;
+switch (pricePerRowHeightMode) {
+case AUTOMATIC:
+    height = PricePerRow.AUTOMATIC;
+case TICKSIZE:
+    height = PricePerRow.TICKSIZE;
+case CUSTOM:
+    height = customRowHeight;
+}
+
+profile tpo = TimeProfile("startNewProfile" = cond, "onExpansion" = onExpansion, "numberOfProfiles" = profiles, "pricePerRow" = height, "value area percent" = valueAreaPercent);
+def con = CompoundValue(1, onExpansion, no);
+def pc = if IsNaN(tpo.GetPointOfControl()) and con then pc[1] else tpo.GetPointOfControl();
+def hVA = if IsNaN(tpo.GetHighestValueArea()) and con then hVA[1] else tpo.GetHighestValueArea();
+def lVA = if IsNaN(tpo.GetLowestValueArea()) and con then lVA[1] else tpo.GetLowestValueArea();
+
+def hProfile = if IsNaN(tpo.GetHighest()) and con then hProfile[1] else tpo.GetHighest();
+def lProfile = if IsNaN(tpo.GetLowest()) and con then lProfile[1] else tpo.GetLowest();
+def plotsDomain = IsNaN(close) == onExpansion;
+
+plot POC = if plotsDomain then pc else Double.NaN;
+plot ProfileHigh = if plotsDomain then hProfile else Double.NaN;
+plot ProfileLow = if plotsDomain then lProfile else Double.NaN;
+plot VAHigh = if plotsDomain then hVA else Double.NaN;
+plot VALow = if plotsDomain then lVA else Double.NaN;
+
+DefineGlobalColor("Profile", GetColor(1));
+DefineGlobalColor("Point Of Control", Color.WHITE);
+DefineGlobalColor("Value Area", Color.CYAN);
+
+tpo.Show(GlobalColor("Profile"), if showPointOfControl then GlobalColor("Point Of Control") else Color.CURRENT, if showValueArea then GlobalColor("Value Area") else Color.CURRENT, opacity);
+POC.SetDefaultColor(Color.WHITE);
+POC.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+VAHigh.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+VALow.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+VAHigh.SetDefaultColor(Color.CYAN);
+VALow.SetDefaultColor(Color.CYAN);
+ProfileHigh.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+ProfileLow.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+ProfileHigh.SetDefaultColor(GetColor(3));
+ProfileLow.SetDefaultColor(GetColor(3));
+ProfileHigh.Hide();
+ProfileLow.Hide();
+
+
+
+
+
+
+def bal = (VAHigh + VALow) / 2;
+def imbal = if bal > close then ProfileLow else ProfileHigh;
+#plot priceimbalance = imbal;
+plot TPOVAbal = bal;
+
+
+plot TPOext1 = if showExtensions and bal > poc then POC - 1 * (ProfileHigh - POC) else 1 * (POC - ProfileLow) + POC;
+plot TPOext_38 = if showExtensions and bal > poc then  POC - .382 * (ProfileHigh - POC) else .382 * (POC - ProfileLow) + POC;
+plot TPOext_5 = if showExtensions and bal > poc then  POC - .5 * (ProfileHigh - POC) else .5 * (POC - ProfileLow) + POC;
+plot TPOext_61 = if showExtensions and bal > poc then  POC - .618 * (ProfileHigh - POC) else .618 * (POC - ProfileLow) + POC;
+plot TPOext_78 = if showExtensions and bal > poc then  POC - .786 * (ProfileHigh - POC) else .786 * (POC - ProfileLow) + POC;
+plot TPOext2 = if showExtensions and bal > poc then  POC - 2 * (ProfileHigh - POC) else 2 * (POC - ProfileLow) + POC;
+
+plot TPOrej1 = if showExtensions and bal < poc then  POC - .5 * (ProfileHigh - POC) else .5 * (POC - ProfileLow) + POC;
+plot TPOrej2 = if showExtensions and bal < poc then  POC - 1 * (ProfileHigh - POC) else 1 * (POC - ProfileLow) + POC;
+plot TPOrej3 = if showExtensions and bal < poc then  POC - 2 * (ProfileHigh - POC) else 2 * (POC - ProfileLow) + POC;
+
+plot TPOext_25 = if showExtensions and bal > poc then  POC - .25 * (ProfileHigh - POC) else .25 * (POC - ProfileLow) + POC;
+#plot Text_25 = if showExtensions and bal > poc then  POC - .1 * (ProfileHigh - POC) else .15 * (POC - ProfileLow) + POC;
+
+
+TPOext1.SetDefaultColor(Color.YELLOW);
+TPOext2.SetDefaultColor(Color.RED);
+TPOext_38.SetDefaultColor(Color.MAGENTA);
+TPOext_5.SetDefaultColor(Color.CYAN);
+TPOext_61.SetDefaultColor(Color.MAGENTA);
+TPOext_78.SetDefaultColor(Color.CYAN);
+TPOrej1.SetDefaultColor(Color.GREEN);
+TPOrej2.SetDefaultColor(Color.GREEN);
+TPOrej3.SetDefaultColor(Color.GREEN);
+TPOvabal.setdefaultcolor(color.magenta);
+TPOext_25.SetDefaultColor(Color.PINK);
+
+
+def na = double.nan;
+AddLabel(showlabels, if bal > POC then "BearImbal" else "BullImbal", (if bal > POC then Color.RED else Color.GREEN));
+AddCloud(if showclouds then TPOext_38 else na, if showclouds then TPOext_61 else na, Color.GREEN, Color.RED);
+AddCloud(if showclouds then TPOrej1 else na, if showclouds then TPOrej2 else na, Color.GREEN, Color.RED);
+
+plot sma = average(close, smaLength);
+sma.AssignValueColor(if close < sma then Color.RED else Color.GREEN);

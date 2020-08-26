@@ -1,0 +1,219 @@
+# Corey TPO Score (c) version 1
+# By Corey Surles
+# @coreysurles
+
+
+#Disclaimer#
+#All output is for informational and educational purposes only. This is not an investment recommendation or advice, and should not be relied upon in making the decision to buy or sell a security or pursue a particular investment strategy#
+
+
+declare lower;
+
+input pricePerRowHeightMode = {default TICKSIZE, AUTOMATIC, CUSTOM};
+input customRowHeight = 1.0;
+input timePerProfile = {default day, WEEK, MINUTE, HOUR, MONTH, "OPT EXP", chart, BAR, year};
+input multiplier = 1;
+input onExpansion = no;
+input profiles = 1000;
+input showPointOfControl = no;
+input showValueArea = no;
+input valueAreaPercent = 70;
+input opacity = 50;
+
+input showMovingAvgs = no;
+input showLabels = yes;
+input showLabels1 = yes;
+input showLabels2 = yes;
+input showClouds = no;
+input showTargets = no;
+input scorePositiveColor = 6;
+input scoreNegativeColor = 5;
+
+def ticsize = if TickSize() <= .01 and close < 500 then TickSize() * 20 else if TickSize() <= .01 and close > 500 then TickSize() * 100 else TickSize() * 4;
+
+def period;
+def yyyymmdd = GetYYYYMMDD();
+def seconds = SecondsFromTime(0);
+def month = GetYear() * 12 + GetMonth();
+def day_number = DaysFromDate(First(yyyymmdd)) + GetDayOfWeek(First(yyyymmdd));
+def dom = GetDayOfMonth(yyyymmdd);
+def dow = GetDayOfWeek(yyyymmdd - dom + 1);
+def expthismonth = (if dow > 5 then 27 else 20) - dow;
+def exp_opt = month + (dom > expthismonth);
+def year = GetYear();
+switch (timePerProfile) {
+case chart:
+    period = 0;
+case MINUTE:
+    period = Floor(seconds / 60 + day_number * 24 * 60);
+case HOUR:
+    period = Floor(seconds / 3600 + day_number * 24);
+case day:
+    period = CountTradingDays(Min(First(yyyymmdd), yyyymmdd), yyyymmdd) - 1;
+case WEEK:
+    period = Floor(day_number / 7);
+case MONTH:
+    period = Floor(month - First(month));
+case "OPT EXP":
+    period = exp_opt - First(exp_opt);
+case BAR:
+    period = BarNumber() - 1;
+case year:
+    period = Floor(year - First(year));
+}
+
+def count = CompoundValue(1, if period != period[1] then (count[1] + period - period[1]) % multiplier else count[1], 0);
+def cond = count < count[1] + period - period[1];
+def height;
+switch (pricePerRowHeightMode) {
+case AUTOMATIC:
+    height = PricePerRow.AUTOMATIC;
+case TICKSIZE:
+    height = PricePerRow.TICKSIZE;
+case CUSTOM:
+    height = customRowHeight;
+}
+
+plot Price = close;
+price.SetDefaultColor(Color.WHITE);
+price.SetStyle(Curve.SHORT_DASH);
+
+profile tpo = volumeprofile("startNewProfile" = cond, "onExpansion" = onExpansion, "numberOfProfiles" = profiles, "pricePerRow" = height, "value area percent" = valueAreaPercent);
+def con = CompoundValue(1, onExpansion, no);
+def pc = if IsNaN(tpo.GetPointOfControl()) and con then pc[1] else tpo.GetPointOfControl();
+def hVA = if IsNaN(tpo.GetHighestValueArea()) and con then hVA[1] else tpo.GetHighestValueArea();
+def lVA = if IsNaN(tpo.GetLowestValueArea()) and con then lVA[1] else tpo.GetLowestValueArea();
+
+def hProfile = if IsNaN(tpo.GetHighest()) and con then hProfile[1] else tpo.GetHighest();
+def lProfile = if IsNaN(tpo.GetLowest()) and con then lProfile[1] else tpo.GetLowest();
+def plotsDomain = IsNaN(close) == onExpansion;
+
+plot POC = if plotsDomain then pc else Double.NaN;
+plot ProfileHigh = if plotsDomain then hProfile else Double.NaN;
+plot ProfileLow = if plotsDomain then lProfile else Double.NaN;
+plot VAHigh = if plotsDomain then hVA else Double.NaN;
+plot VALow = if plotsDomain then lVA else Double.NaN;
+
+DefineGlobalColor("Profile", Color.MAGENTA);
+DefineGlobalColor("Point Of Control", Color.YELLOW);
+DefineGlobalColor("Value Area", Color.CYAN);
+
+#tpo.Show(GlobalColor("Profile"), if showPointOfControl then GlobalColor("Point Of Control") else Color.CURRENT, if showValueArea then GlobalColor("Value Area") else Color.CURRENT, opacity);
+POC.SetDefaultColor(Color.YELLOW);
+#POC.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+#VAHigh.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+#VALow.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+VAHigh.SetDefaultColor(Color.CYAN);
+VALow.SetDefaultColor(Color.CYAN);
+#ProfileHigh.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+#ProfileLow.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+ProfileHigh.SetDefaultColor(Color.MAGENTA);
+ProfileLow.SetDefaultColor(Color.MAGENTA);
+#ProfileHigh.Hide();
+#ProfileLow.Hide();
+
+
+
+def imbal = if (VAHigh + VALow) / 2 > POC then ProfileLow else ProfileHigh;
+def priceimbalance = imbal;
+
+def ext1 = if (VAHigh + VALow) / 2 > POC then POC - 1 * (ProfileHigh - POC) else 1 * (POC - ProfileLow) + POC;
+def ext_38 = if (VAHigh + VALow) / 2 > POC then  POC - .382 * (ProfileHigh - POC) else .382 * (POC - ProfileLow) + POC;
+def ext_5 = if (VAHigh + VALow) / 2 > POC then  POC - .5 * (ProfileHigh - POC) else .5 * (POC - ProfileLow) + POC;
+def ext_61 = if (VAHigh + VALow) / 2 > POC then  POC - .618 * (ProfileHigh - POC) else .618 * (POC - ProfileLow) + POC;
+def ext_78 = if (VAHigh + VALow) / 2 > POC then  POC - .786 * (ProfileHigh - POC) else .786 * (POC - ProfileLow) + POC;
+def ext2 = if (VAHigh + VALow) / 2 > POC then  POC - 2 * (ProfileHigh - POC) else 2 * (POC - ProfileLow) + POC;
+
+def rej1 = if (VAHigh + VALow) / 2 < POC then  POC - .5 * (ProfileHigh - POC) else .5 * (POC - ProfileLow) + POC;
+def rej2 = if (VAHigh + VALow) / 2 < POC then  POC - 1 * (ProfileHigh - POC) else 1 * (POC - ProfileLow) + POC;
+def rej3 = if (VAHigh + VALow) / 2 < POC then  POC - 2 * (ProfileHigh - POC) else 2 * (POC - ProfileLow) + POC;
+
+def ext_25 = if (VAHigh + VALow) / 2 > POC then  POC - .1 * (ProfileHigh - POC) else .15 * (POC - ProfileLow) + POC;
+
+#Extension Colors
+#ext1.SetDefaultColor(Color.YELLOW);
+#ext2.SetDefaultColor(Color.RED);
+#ext_38.SetDefaultColor(Color.MAGENTA);
+#ext_5.SetDefaultColor(Color.CYAN);
+#ext_61.SetDefaultColor(Color.MAGENTA);
+#ext_78.SetDefaultColor(Color.CYAN);
+#rej1.SetDefaultColor(Color.GREEN);
+#rej2.SetDefaultColor(Color.GREEN);
+#rej3.SetDefaultColor(Color.GREEN);
+#ext_25.SetDefaultColor(Color.pink);
+
+
+plot VAbal = (VAHigh + VALow) / 2;
+VAbal.SetDefaultColor(Color.PINK);
+VAbal.SetStyle(Curve.SHORT_DASH);
+def midPoint = (ProfileHigh + ProfileLow) / 2;
+
+def scorevah = if close > VAHigh then 0 + 1 * ticsize else if close < VALow then 0 - 1 * ticsize else 0;
+def scoreval = if close < VALow then 0 - 1 * ticsize else if close > VAHigh then 0 + 1 * ticsize else 0;
+def scorepoc = if close > POC then 0 + 1 * ticsize else if close < POC then 0 - 1 * ticsize else 0;
+def scorevabal = if close > VAbal then 0 + 1 * ticsize else if close < VAbal then 0 - 1 * ticsize else 0;
+def scoreimbal = if (VAHigh + VALow) / 2 > POC then + 1 * ticsize else if (VAHigh + VALow) / 2 < POC then -1 * ticsize else 0;
+
+plot ScoreTotal = scorevah + scoreval + scorepoc + scorevabal + scoreimbal + close;
+scoretotal.AssignValueColor(if scoretotal > close then getcolor(scorepositivecolor) else if scoretotal < close then getcolor(scorenegativecolor) else Color.YELLOW);
+
+def positive = if scoretotal > close then 1 else 0;
+def neutral = if scoretotal == close then 1 else 0;
+def negative = if scoretotal < close then 1 else 0;
+
+#Bear Bull Imbalance
+AddLabel(showLabels, if (VAHigh + VALow) / 2 > POC then "BearImbal" else "BullImbal", (if (VAHigh + VALow) / 2 > POC then Color.PINK else Color.GREEN));
+
+# TPO Score
+AddLabel(showLabels1, Concat("TPO Score is ", (if positive then "Positive" else if neutral then "Neutral" else if negative then "Negative" else "N/A")), if positive then Color.GREEN else if neutral then Color.BLUE else if negative then Color.PINK else Color.WHITE);
+
+# Balance
+AddLabel(showLabels1, (if close > VAbal then "Sellers offsides above " else if close < VAbal then "Buyers offsides below " else "Balance flat at ") + (Round(VAbal / TickSize(), 0) * TickSize()), 
+    if VAbal < close then Color.GREEN else if VAbal == close then Color.BLUE else if VAbal > close then Color.PINK else Color.WHITE);
+
+# POC
+def locationPOC = if close >= POC then 1 else 0;
+def rPOC = if POC <= midPoint then RoundUp(POC / TickSize(), 0) * TickSize() else RoundDown(POC / TickSize(), 0) * TickSize();
+AddLabel(showLabels1, 
+            if locationPOC then "Buyers in Control above " + rPOC 
+                else if !locationPOC then "Sellers in Control below " + rPOC 
+                else "N/A", 
+            if positive then Color.GREEN else if neutral then Color.BLUE else if negative then Color.PINK else Color.WHITE);
+
+# Value Area
+AddLabel(showLabels1, "Price is " + 
+    (if close < VAHigh and close > VALow then "inside Value " 
+        else if close > VAHigh then "above Value "  
+        else if close < VALow then "below VAL "  
+        else "N/A ")
+            + (if close > VAHigh then Round(VAHigh / TickSize(), 0) * TickSize() 
+                  else if close < VALow then Round(VALow / TickSize(), 0) * TickSize() else (if VAHigh - close > close - VALow then Round(VALow / TickSize(), 0) * TickSize() else Round(VAHigh / TickSize(), 0) * TickSize())), 
+        if close > VAHigh then Color.GREEN else if close < VALow then Color.PINK
+            else Color.YELLOW);
+
+# Profile Targets
+AddLabel(showLabels2, "This profile targets " + Round(ext1 / TickSize(), 0) * TickSize() + " fail targets " + Round(rej2 / TickSize(), 0) * TickSize(),
+    if close > VAHigh then Color.GREEN else if close < VALow then Color.PINK
+            else Color.YELLOW);
+
+# Pass/Fail Profile
+AddLabel(showLabels2, if (ext1 < VAbal and close < ext1) then "This profile is successful" else if (ext1 > VAbal and close > ext1) then "This profile is successful" else if (ext1 > VAbal and close < rej2) then "This profile is failed" else if (ext1 < VAbal and close > rej2) then "This profile is failed" else "Targets are still Open",
+    if close > poc then Color.GREEN else if close < poc then Color.PINK
+            else Color.YELLOW);
+
+# Clouds
+AddCloud(if showClouds then ext_38 else Double.NaN, if showClouds then ext_61 else Double.NaN, Color.GREEN, Color.RED);
+AddCloud(if showClouds then rej1 else Double.NaN, if showClouds then rej2 else Double.NaN, Color.GREEN, Color.RED);
+AddCloud(if showTargets then ext1 else Double.NaN, if showTargets then ext2 else Double.NaN, Color.YELLOW, Color.YELLOW);
+
+# moving Averages
+Input sBarPeriod = 3;
+plot sma1 = if showMovingAvgs then Average(close, sBarPeriod) else Double.NaN;
+input ema1_len = 8;
+input ema2_len = 13;
+plot ema1 = if showMovingAvgs then MovAvgExponential(length = ema1_len) else Double.NaN;
+plot ema2 = if showMovingAvgs then MovAvgExponential(length = ema2_len) else Double.NaN;
+
+sma1.SetDefaultColor(Color.GREEN);
+ema1.SetDefaultColor(Color.YELLOW);
+ema2.SetDefaultColor(Color.RED);
