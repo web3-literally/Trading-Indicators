@@ -19,10 +19,6 @@
     Awesome Trading Indicators and Strategies for ThinkOrSwim and MQL4/5, TradeView, NinjaTrade, CTrader
   </p>
 </p>
-
-## Contact Me
-  * [Skype ID]  live:.cid.f1971944909a6e0e
-  * [Email]  willcomeo022@gmail.com
   
 ## Contents
 * [Indicators]
