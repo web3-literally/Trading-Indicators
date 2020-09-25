@@ -13,23 +13,45 @@
 //--- plot Arrow1
 #property indicator_label1  "BuyArrow"
 #property indicator_type1   DRAW_ARROW
-#property indicator_color1  clrRed
+#property indicator_color1  clrYellow
 #property indicator_style1  STYLE_SOLID
-#property indicator_width1  3
+#property indicator_width1  2
 //--- plot Arrow2
 #property indicator_label2  "SellArrow"
 #property indicator_type2   DRAW_ARROW
-#property indicator_color2  clrAqua
+#property indicator_color2  clrRed
 #property indicator_style2  STYLE_SOLID
-#property indicator_width2  3
-//--- input parameters
-input int      Average1=5;
-input int      Average2=10;
-input int      Average3=15;
-input int      Average4=20;
+#property indicator_width2  2
 
-input int      NCANDLES=2;
-input int      RANGEPIPS=20;
+#resource "Ring07.wav"
+
+enum NEW_FILTER_BUY_PRICE_MODE
+  {
+   NFBP_LOW = 0,   //LOW
+   NFBP_CLOSE = 1, //CLOSE
+  };
+enum NEW_FILTER_SELL_PRICE_MODE
+  {
+   NFSP_HIGH = 0,   //HIGH
+   NFSP_CLOSE = 1, //CLOSE
+  };
+
+//--- input parameters
+input int                           Average1=5;
+input int                           Average2=10;
+input int                           Average3=15;
+input int                           Average4=20;
+
+input int                           NCANDLES=2;
+input int                           RANGEPIPS=20;
+
+input double                        BollingerBandHigh=21;
+input double                        BollingerBandLow=2;
+input NEW_FILTER_BUY_PRICE_MODE     NewFilterBuyPriceType=NFBP_LOW;
+input NEW_FILTER_SELL_PRICE_MODE    NewFilterSellPriceType=NFSP_HIGH;
+
+input double                        LowerShadowPercent = 0.3;
+input double                        UpperShadowPercent = 0.3;
 //--- indicator buffers
 double         Arrow1Buffer[];
 double         Arrow2Buffer[];
@@ -93,6 +115,9 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
 //---
+   if(prev_calculated != 0)
+      PlaySound("::Ring07.wav");
+
    datetime todayStart = iTime(Symbol(), PERIOD_D1, 0);
    int todayStartShift = iBarShift(Symbol(), 0, todayStart);
    double dStartOpen = iOpen(Symbol(), 0, todayStartShift);
@@ -159,26 +184,51 @@ int OnCalculate(const int rates_total,
       double dPipRange = 0;
       dMAX = high[i];
       dMIN = low[i];
-      for(int index = i; index < i + NCANDLES; index++)
+      for(int index = i; index < rates_total; index++)
         {
-         if (dMAX < high[index]) dMAX = high[index];
-         if (dMIN > low[index]) dMIN = low[index];
+         int nTempBullish = nBullish, nTempBearish = nBearish ;
+
          if(close[index] > open[index])
-            nBullish++;
+            nTempBullish = nBullish + 1;
          else
-            nBearish++;
+            nTempBearish = nBearish + 1;
+
+         if(nTempBullish * nTempBearish != 0)
+            break;
+
+         nBullish = nTempBullish;
+         nBearish = nTempBearish;
+
+         if(dMAX < high[index])
+            dMAX = high[index];
+         if(dMIN > low[index])
+            dMIN = low[index];
         }
-      dPipRange = (dMAX - dMIN) * pow(10, Digits - 1);  
-      
+
+
+      dPipRange = (dMAX - dMIN) * pow(10, Digits - 1);
+
       if(dPipRange >= RANGEPIPS)
         {
-         if(nBullish >= NCANDLES)
+         if(nBullish >= NCANDLES)//Sell Arrow
            {
-            Arrow2Buffer[i] = close[i];
+            double UpperShadow = high[i] - close[i];
+            if(UpperShadow <= (double)RANGEPIPS * UpperShadowPercent && ((NewFilterSellPriceType == NFSP_HIGH && high[i] > BollingerBandHigh) || (NewFilterSellPriceType == NFSP_CLOSE && close[i] < (BollingerBandLow + BollingerBandHigh) / 2)))
+              {
+               Arrow2Buffer[i] = high[i] + Point * 30;
+               if(prev_calculated != 0)
+                  PlaySound("::Ring07.wav");
+              }
            }
-         if(nBearish >= NCANDLES)
+         if(nBearish >= NCANDLES)//Buy Arrow
            {
-            Arrow1Buffer[i] = close[i];
+            double LowerShadow = close[i] - low[i];
+            if(LowerShadow <= (double)RANGEPIPS * LowerShadowPercent && ((NewFilterBuyPriceType == NFBP_LOW && low[i] < BollingerBandLow) || (NewFilterBuyPriceType == NFBP_CLOSE && close[i] > (BollingerBandLow + BollingerBandHigh) / 2)))
+              {
+               Arrow1Buffer[i] = low[i] - Point * 30;
+               if(prev_calculated != 0)
+                  PlaySound("::Ring07.wav");
+              }
            }
         }
      }
@@ -196,4 +246,6 @@ void OnChartEvent(const int    id,
   {
    program.ChartEvent(id,lparam,dparam,sparam);
   }
+//+------------------------------------------------------------------+
+
 //+------------------------------------------------------------------+
