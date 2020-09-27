@@ -8,8 +8,8 @@
 #property version   "1.00"
 #property strict
 //#property indicator_separate_window
-#property indicator_buffers 2
-#property indicator_plots   2
+#property indicator_buffers 10
+#property indicator_plots   8
 //--- plot Arrow1
 #property indicator_label1  "BuyArrow"
 #property indicator_type1   DRAW_ARROW
@@ -23,6 +23,15 @@
 #property indicator_style2  STYLE_SOLID
 #property indicator_width2  2
 
+#property indicator_color3 clrYellow
+#property indicator_color4 clrYellow
+#property indicator_color5 clrYellow
+
+#property indicator_style3  STYLE_DOT
+#property indicator_style4  STYLE_DOT
+#property indicator_style5  STYLE_DOT
+
+#include <MovingAverages.mqh>
 #resource "Ring07.wav"
 
 enum NEW_FILTER_BUY_PRICE_MODE
@@ -45,8 +54,9 @@ input int                           Average4=20;
 input int                           NCANDLES=2;
 input int                           RANGEPIPS=20;
 
-input double                        BollingerBandHigh=21;
-input double                        BollingerBandLow=2;
+input double                        BollingerBandDeviation=2.0;
+input int                           BollingerBandPeriod=20;
+
 input NEW_FILTER_BUY_PRICE_MODE     NewFilterBuyPriceType=NFBP_LOW;
 input NEW_FILTER_SELL_PRICE_MODE    NewFilterSellPriceType=NFSP_HIGH;
 
@@ -56,6 +66,10 @@ input double                        UpperShadowPercent = 0.3;
 double         Arrow1Buffer[];
 double         Arrow2Buffer[];
 
+double         ExtMovingBuffer[];
+double         ExtUpperBuffer[];
+double         ExtLowerBuffer[];
+double         ExtStdDevBuffer[];
 
 #include "Program.mqh"
 CProgram program;
@@ -64,6 +78,14 @@ CProgram program;
 //+------------------------------------------------------------------+
 int OnInit()
   {
+//--- check for input parameter
+   if(BollingerBandPeriod<=0)
+     {
+      Print("Wrong input parameter Bands Period=",BollingerBandPeriod);
+      return(INIT_FAILED);
+     }
+
+   IndicatorDigits(Digits);
 //--- indicator buffers mapping
    SetIndexBuffer(0,Arrow1Buffer);
    SetIndexBuffer(1,Arrow2Buffer);
@@ -80,6 +102,28 @@ int OnInit()
 
    SetIndexEmptyValue(0,0.0);
    SetIndexEmptyValue(1,0.0);
+
+
+//--- middle line
+   SetIndexStyle(2,DRAW_LINE);
+   SetIndexBuffer(2,ExtMovingBuffer);
+   SetIndexLabel(2,"Buy Bands SMA");
+//--- upper band
+   SetIndexStyle(3,DRAW_LINE);
+   SetIndexBuffer(3,ExtUpperBuffer);
+   SetIndexLabel(3,"Buy Bands Upper");
+//--- lower band
+   SetIndexStyle(4,DRAW_LINE);
+   SetIndexBuffer(4,ExtLowerBuffer);
+   SetIndexLabel(4,"Buy Bands Lower");
+
+//--- work buffer
+   SetIndexBuffer(5,ExtStdDevBuffer);
+
+//---
+   SetIndexDrawBegin(2,BollingerBandPeriod);
+   SetIndexDrawBegin(3,BollingerBandPeriod);
+   SetIndexDrawBegin(4,BollingerBandPeriod);
 
    program.SetAverageCount(Average1, Average2, Average3, Average4);
    program.OnInitEvent();
@@ -115,9 +159,6 @@ int OnCalculate(const int rates_total,
                 const int &spread[])
   {
 //---
-   if(prev_calculated != 0)
-      PlaySound("::Ring07.wav");
-
    datetime todayStart = iTime(Symbol(), PERIOD_D1, 0);
    int todayStartShift = iBarShift(Symbol(), 0, todayStart);
    double dStartOpen = iOpen(Symbol(), 0, todayStartShift);
@@ -175,16 +216,38 @@ int OnCalculate(const int rates_total,
 
    program.SetTableData(StartNowPips, StartNowPercent, MinMaxPips, MinMaxPercent, MaxMinPips, MaxMinPercent, dAvg1, dAvg2, dAvg3, dAvg4);
 
-   for(int i=0; i < rates_total-prev_calculated; i++)
+
+   ArraySetAsSeries(Arrow1Buffer,false);
+   ArraySetAsSeries(Arrow2Buffer,false);
+   ArraySetAsSeries(ExtMovingBuffer,false);
+   ArraySetAsSeries(ExtUpperBuffer,false);
+   ArraySetAsSeries(ExtLowerBuffer,false);
+   ArraySetAsSeries(ExtStdDevBuffer,false);
+   ArraySetAsSeries(time,false);
+   ArraySetAsSeries(open,false);
+   ArraySetAsSeries(high,false);
+   ArraySetAsSeries(low,false);
+   ArraySetAsSeries(close,false);
+
+
+   for(int i=prev_calculated; i < rates_total; i++)
      {
-      if(i + NCANDLES > rates_total)
+      if(i < NCANDLES)
          continue;
+      //--- middle line
+      ExtMovingBuffer[i]=SimpleMA(i,BollingerBandPeriod,close);
+      //--- calculate and write down StdDev
+      ExtStdDevBuffer[i]=StdDev_Func(i,close,ExtMovingBuffer,BollingerBandPeriod);
+      //--- upper line
+      ExtUpperBuffer[i]=ExtMovingBuffer[i]+BollingerBandDeviation*ExtStdDevBuffer[i];
+      //--- lower line
+      ExtLowerBuffer[i]=ExtMovingBuffer[i]-BollingerBandDeviation*ExtStdDevBuffer[i];
 
       int nBullish = 0, nBearish = 0;
       double dPipRange = 0;
       dMAX = high[i];
       dMIN = low[i];
-      for(int index = i; index < rates_total; index++)
+      for(int index = i; index > i - NCANDLES; index--)
         {
          int nTempBullish = nBullish, nTempBearish = nBearish ;
 
@@ -210,20 +273,20 @@ int OnCalculate(const int rates_total,
 
       if(dPipRange >= RANGEPIPS)
         {
-         if(nBullish >= NCANDLES)//Sell Arrow
+         if(nBullish > 0)//Sell Arrow
            {
             double UpperShadow = high[i] - close[i];
-            if(UpperShadow <= (double)RANGEPIPS * UpperShadowPercent && ((NewFilterSellPriceType == NFSP_HIGH && high[i] > BollingerBandHigh) || (NewFilterSellPriceType == NFSP_CLOSE && close[i] < (BollingerBandLow + BollingerBandHigh) / 2)))
+            if(UpperShadow <= (double)RANGEPIPS * UpperShadowPercent && ((NewFilterSellPriceType == NFSP_HIGH && high[i] > ExtUpperBuffer[i]) || (NewFilterSellPriceType == NFSP_CLOSE && close[i] > ExtUpperBuffer[i]) || (close[i] < ExtMovingBuffer[i])))
               {
                Arrow2Buffer[i] = high[i] + Point * 30;
                if(prev_calculated != 0)
                   PlaySound("::Ring07.wav");
               }
            }
-         if(nBearish >= NCANDLES)//Buy Arrow
+         if(nBearish > 0)//Buy Arrow
            {
             double LowerShadow = close[i] - low[i];
-            if(LowerShadow <= (double)RANGEPIPS * LowerShadowPercent && ((NewFilterBuyPriceType == NFBP_LOW && low[i] < BollingerBandLow) || (NewFilterBuyPriceType == NFBP_CLOSE && close[i] > (BollingerBandLow + BollingerBandHigh) / 2)))
+            if(LowerShadow <= (double)RANGEPIPS * LowerShadowPercent && ((NewFilterBuyPriceType == NFBP_LOW && low[i] < ExtLowerBuffer[i]) || (NewFilterBuyPriceType == NFBP_CLOSE && close[i] < ExtLowerBuffer[i]) || (close[i] > ExtMovingBuffer[i])))
               {
                Arrow1Buffer[i] = low[i] - Point * 30;
                if(prev_calculated != 0)
@@ -247,5 +310,19 @@ void OnChartEvent(const int    id,
    program.ChartEvent(id,lparam,dparam,sparam);
   }
 //+------------------------------------------------------------------+
-
+double StdDev_Func(int position,const double &price[],const double &MAprice[],int period)
+  {
+//--- variables
+   double StdDev_dTmp=0.0;
+//--- check for position
+   if(position>=period)
+     {
+      //--- calcualte StdDev
+      for(int i=0; i<period; i++)
+         StdDev_dTmp+=MathPow(price[position-i]-MAprice[position],2);
+      StdDev_dTmp=MathSqrt(StdDev_dTmp/period);
+     }
+//--- return calculated value
+   return(StdDev_dTmp);
+  }
 //+------------------------------------------------------------------+
