@@ -1,0 +1,25 @@
+# Angelina M Dye © Version 1.0
+# By W.T.Ma
+
+input PercentGreaterOfPrev5Candles = 20;
+input PercentDistanceOfClose = 15;
+input PercentSecondForFirstCandle = 25;
+
+def NA = Double.NaN;
+def IsFirstCandleDown = if close[1] < open[1] then 1 else 0;
+def IsFirstCandleUp = if close[1] > open[1] then 1 else 0;
+def IsFirstCandleGreaterThanPrev5Candles =  if volume[2] * (1.0 + PercentGreaterOfPrev5Candles / 100.0) < volume[1] and volume[3] * (1.0 + PercentGreaterOfPrev5Candles / 100.0) < volume[1] and volume[4] * (1.0 + PercentGreaterOfPrev5Candles / 100.0) < volume[1] and volume[5] * (1.0 + PercentGreaterOfPrev5Candles / 100.0) < volume[1] and volume[6] * (1.0 + PercentGreaterOfPrev5Candles / 100.0) < volume[1] then 1 else 0;
+def IsFirstCandleCloseDistanceThanRestForDown = if (close[1] - low[1]) < (high[1] - low[1]) * PercentDistanceOfClose / 100.0 then 1 else 0;
+def IsFirstCandleCloseDistanceThanRestForUp = if (high[1] - close[1]) < (high[1] - low[1]) * PercentDistanceOfClose / 100.0 then 1 else 0;
+def IsSecondCandleOpenCloseInFirstCandleRangeForDown = if close > close[1] and open > close[1] and close < (close[1] * (100.0 - PercentSecondForFirstCandle) + open[1] * PercentSecondForFirstCandle) / 100.0 and open < (close[1] * (100.0 - PercentSecondForFirstCandle) + open[1] * PercentSecondForFirstCandle) / 100.0 then 1 else 0;
+def IsSecondCandleOpenCloseInFirstCandleRangeForUp = if close < close[1] and open < close[1] and close > (close[1] * (100.0 - PercentSecondForFirstCandle) + open[1] * PercentSecondForFirstCandle) / 100.0 and open > (close[1] * (100.0 - PercentSecondForFirstCandle) + open[1] * PercentSecondForFirstCandle) / 100.0 then 1 else 0;
+
+plot ArrowDown = if IsFirstCandleDown and IsFirstCandleGreaterThanPrev5Candles and IsFirstCandleCloseDistanceThanRestForDown and IsSecondCandleOpenCloseInFirstCandleRangeForDown then close else NA;
+ArrowDown.SetPaintingStrategy(PaintingStrategy.BOOLEAN_ARROW_DOWN);
+ArrowDown.SetDefaultColor(Color.GREEN);
+ArrowDown.SetLineWeight(5);
+
+plot ArrowUp = if IsFirstCandleUp and IsFirstCandleGreaterThanPrev5Candles and IsFirstCandleCloseDistanceThanRestForUp and IsSecondCandleOpenCloseInFirstCandleRangeForUp then close else NA;
+ArrowUp.SetPaintingStrategy(PaintingStrategy.BOOLEAN_ARROW_UP);
+ArrowUp.SetDefaultColor(Color.RED);
+ArrowUp.SetLineWeight(5);

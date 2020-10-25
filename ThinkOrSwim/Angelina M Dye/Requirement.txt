@@ -1,0 +1,6 @@
+An indicator that paints a dot at the end of the second candle.
+
+For an DOWN ARROW OR DOT: The first candle should be a down colored (red) which means the close must be lower than the open. It should have volume about 20% greater of the previous 5 candles (as seen below), the close of FIRST candle should be distanced atleast 15% to the low of the candle, meaning the lower wick should not be greater than 15% of the rest of the candle. So the close should be 15% or better closer to the low of the candle, then the second candle should open and close within 25% of the previous candle (first candle). This only refers to open and close, not high or low, screenshot provided below. At the end of that candle, or when the candle is closing it should paint a dot or an arrow pointing down at the close of the candle.
+
+For an UP ARROW OR DOT: Should be exact opposite of the above.
+
