@@ -14,12 +14,22 @@ def IsFirstCandleCloseDistanceThanRestForUp = if (high[1] - close[1]) < (high[1]
 def IsSecondCandleOpenCloseInFirstCandleRangeForDown = if close > close[1] and open > close[1] and close < (close[1] * (100.0 - PercentSecondForFirstCandle) + open[1] * PercentSecondForFirstCandle) / 100.0 and open < (close[1] * (100.0 - PercentSecondForFirstCandle) + open[1] * PercentSecondForFirstCandle) / 100.0 then 1 else 0;
 def IsSecondCandleOpenCloseInFirstCandleRangeForUp = if close < close[1] and open < close[1] and close > (close[1] * (100.0 - PercentSecondForFirstCandle) + open[1] * PercentSecondForFirstCandle) / 100.0 and open > (close[1] * (100.0 - PercentSecondForFirstCandle) + open[1] * PercentSecondForFirstCandle) / 100.0 then 1 else 0;
 
-plot ArrowDown = if IsFirstCandleDown and IsFirstCandleGreaterThanPrev5Candles and IsFirstCandleCloseDistanceThanRestForDown and IsSecondCandleOpenCloseInFirstCandleRangeForDown then close else NA;
+def IsArrowDown = if  IsFirstCandleDown and IsFirstCandleGreaterThanPrev5Candles and IsFirstCandleCloseDistanceThanRestForDown and IsSecondCandleOpenCloseInFirstCandleRangeForDown then 1 else 0;
+def IsArrowUp = if IsFirstCandleUp and IsFirstCandleGreaterThanPrev5Candles and IsFirstCandleCloseDistanceThanRestForUp and IsSecondCandleOpenCloseInFirstCandleRangeForUp then 1 else 0;
+
+
+plot ArrowDown = if IsArrowDown then close else NA;
 ArrowDown.SetPaintingStrategy(PaintingStrategy.BOOLEAN_ARROW_DOWN);
 ArrowDown.SetDefaultColor(Color.GREEN);
 ArrowDown.SetLineWeight(5);
 
-plot ArrowUp = if IsFirstCandleUp and IsFirstCandleGreaterThanPrev5Candles and IsFirstCandleCloseDistanceThanRestForUp and IsSecondCandleOpenCloseInFirstCandleRangeForUp then close else NA;
+plot ArrowUp = if IsArrowUp then close else NA;
 ArrowUp.SetPaintingStrategy(PaintingStrategy.BOOLEAN_ARROW_UP);
 ArrowUp.SetDefaultColor(Color.RED);
 ArrowUp.SetLineWeight(5);
+
+Alert(IsArrowDown, "Arrow Down!", Alert.BAR, Sound.Bell);
+Alert(IsArrowUp, "Arrow Up!", Alert.BAR, Sound.Bell);
+
+AddChartBubble(IsArrowDown, close, "Arrow Down", Color.WHITE, yes);
+AddChartBubble(IsArrowUp, close, "Arrow Up", Color.YELLOW, yes);
